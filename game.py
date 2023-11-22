@@ -12,9 +12,18 @@ class Game:
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            else:
-                # Pass the event to the input handler
-                self.input_handler.handle_event(event)
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LEFT:
+                    self.move_tiles('l')
+                elif event.key == pygame.K_RIGHT:
+                    self.move_tiles('r')
+                elif event.key == pygame.K_UP:
+                    self.move_tiles('u')
+                elif event.key == pygame.K_DOWN:
+                    self.move_tiles('d')
+
+    def move_tiles(self, direction):
+        pass
 
     def update(self):
         # Update the game state based on input and other logic
