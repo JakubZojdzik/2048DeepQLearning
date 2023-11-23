@@ -22,7 +22,7 @@ while not game.game_over:
     screen.fill((255, 255, 255))
 
     # Draw the game elements
-    game.draw()
+    game.draw(screen)
 
     # Update the display
     pygame.display.flip()
