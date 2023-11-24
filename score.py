@@ -2,9 +2,8 @@ class Score:
     def __init__(self):
         self.value = 0
 
-    def update_score(self, points):
-        # Update the player's score
-        pass
+    def add_points(self, value):
+        self.value += value
 
     def draw(self):
         # Draw the score on the screen

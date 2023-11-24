@@ -22,6 +22,7 @@ class Board:
             self.grid[i][j] = Tile(value, i, j, self.pos_x, self.pos_y, 0)
 
     def move_tiles(self, direction):
+        points = 0
         for i in range(4):
             for j in range(4):
                 if(self.grid[i][j] is not None):
@@ -40,6 +41,7 @@ class Board:
                             action = True
                         elif(self.grid[x][y-1].value == self.grid[x][y].value and self.grid[x][y-1].joinable and self.grid[x][y].joinable):
                             self.grid[x][y-1].update(self.grid[x][y-1].value * 2)
+                            points += self.grid[x][y-1].value * 2
                             self.grid[x][y-1].joinable = False
                             self.grid[x][y].move(x, y-1)
                             self.trash.append(self.grid[x][y])
@@ -58,6 +60,7 @@ class Board:
                             action = True
                         elif(self.grid[x][y+1].value == self.grid[x][y].value and self.grid[x][y+1].joinable and self.grid[x][y].joinable):
                             self.grid[x][y+1].update(self.grid[x][y+1].value * 2)
+                            points += self.grid[x][y+1].value * 2
                             self.grid[x][y+1].joinable = False
                             self.grid[x][y].move(x, y+1)
                             self.trash.append(self.grid[x][y])
@@ -76,6 +79,7 @@ class Board:
                             action = True
                         elif(self.grid[x-1][y].value == self.grid[x][y].value and self.grid[x-1][y].joinable and self.grid[x][y].joinable):
                             self.grid[x-1][y].update(self.grid[x-1][y].value * 2)
+                            points += self.grid[x-1][y].value * 2
                             self.grid[x-1][y].joinable = False
                             self.grid[x][y].move(x-1, y)
                             self.trash.append(self.grid[x][y])
@@ -94,6 +98,7 @@ class Board:
                             action = True
                         elif(self.grid[x+1][y].value == self.grid[x][y].value and self.grid[x+1][y].joinable and self.grid[x][y].joinable):
                             self.grid[x+1][y].update(self.grid[x+1][y].value * 2)
+                            points += self.grid[x+1][y].value * 2
                             self.grid[x+1][y].joinable = False
                             self.trash.append(self.grid[x][y])
                             self.grid[x][y].move(x+1, y)
@@ -111,6 +116,8 @@ class Board:
             print()
         print()
         print()
+
+        return points
 
     def is_game_over(self):
         # Check if the game is over (e.g., no more valid moves)

@@ -1,11 +1,13 @@
 import pygame
 import sys
 from board import Board
+from score import Score
 
 class Game:
     def __init__(self):
         self.game_over = False
         self.board = Board(200, 120)
+        self.score = Score()
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -14,13 +16,13 @@ class Game:
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
-                    self.board.move_tiles('l')
+                    self.score += self.board.move_tiles('l')
                 elif event.key == pygame.K_RIGHT:
-                    self.board.move_tiles('r')
+                    self.score += self.board.move_tiles('r')
                 elif event.key == pygame.K_UP:
-                    self.board.move_tiles('u')
+                    self.score += self.board.move_tiles('u')
                 elif event.key == pygame.K_DOWN:
-                    self.board.move_tiles('d')
+                    self.score += self.board.move_tiles('d')
 
     def update(self):
         # Update the game state based on input and other logic
@@ -28,3 +30,4 @@ class Game:
 
     def draw(self, screen):
         self.board.draw(screen)
+        self.score.draw(screen)
