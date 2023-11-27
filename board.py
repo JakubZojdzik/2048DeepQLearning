@@ -104,16 +104,6 @@ class Board:
         if action:
             self.add_tile()
 
-        for y in range(4):
-            for x in range(4):
-                if(self.grid[x][y] is None):
-                    print("0", end=" ")
-                else:
-                    print(self.grid[x][y].value, end=" ")
-            print()
-        print()
-        print()
-
         return points
 
     def is_game_over(self):
