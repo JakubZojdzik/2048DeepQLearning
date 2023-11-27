@@ -8,11 +8,8 @@ class Board:
         self.pos_x = pos_x
         self.pos_y = pos_y
         self.texture = pygame.image.load('assets/board.png').convert()
-        # self.grid[0][2] = Tile(2, 0, 2, self.pos_x, self.pos_y)
-        # self.grid[1][1] = Tile(4, 1, 1, self.pos_x, self.pos_y)
-        # self.grid[3][3] = Tile(2, 3, 3, self.pos_x, self.pos_y)
-        self.grid[0][3] = Tile(2, 0, 3, self.pos_x, self.pos_y)
-        self.grid[0][2] = Tile(2, 0, 2, self.pos_x, self.pos_y)
+        self.add_tile()
+        self.add_tile()
 
     def add_tile(self):
         empty_positions = [(i, j) for i in range(4) for j in range(4) if self.grid[i][j] is None]
