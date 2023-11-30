@@ -10,8 +10,7 @@ pygame.display.set_caption("2048")
 
 game = Game(width, height)
 
-while not game.game_over:
-    game.handle_events()
+while True:
     game.update()
 
     screen.fill((255, 255, 255))

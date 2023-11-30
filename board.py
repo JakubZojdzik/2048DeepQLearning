@@ -8,6 +8,8 @@ class Board:
         self.pos_x = pos_x
         self.pos_y = pos_y
         self.texture = pygame.image.load('assets/board.png').convert()
+        self.game_over_texture = pygame.image.load('assets/restart.png').convert_alpha()
+
         self.add_tile()
         self.add_tile()
 
@@ -26,7 +28,7 @@ class Board:
                     self.grid[i][j].joinable = True
         action = False
         if(direction == 'u'):
-            for itr in range(3):
+            for _ in range(3):
                 for x in range(4):
                     for y in range(1, 4):
                         if(self.grid[x][y] is None):
@@ -45,7 +47,7 @@ class Board:
                             self.grid[x][y] = None
                             action = True
         elif(direction == 'd'):
-            for itr in range(3):
+            for _ in range(3):
                 for x in range(4):
                     for y in range(2, -1, -1):
                         if(self.grid[x][y] is None):
@@ -64,7 +66,7 @@ class Board:
                             self.grid[x][y] = None
                             action = True
         elif(direction == 'l'):
-            for itr in range(3):
+            for _ in range(3):
                 for x in range(1, 4):
                     for y in range(4):
                         if(self.grid[x][y] is None):
@@ -83,7 +85,7 @@ class Board:
                             self.grid[x][y] = None
                             action = True
         elif(direction == 'r'):
-            for itr in range(3):
+            for _ in range(3):
                 for x in range(2, -1, -1):
                     for y in range(4):
                         if(self.grid[x][y] is None):
@@ -107,13 +109,26 @@ class Board:
         return points
 
     def is_game_over(self):
-        # Check if the game is over (e.g., no more valid moves)
-        pass
+        for x in range(4):
+            for y in range(4):
+                if self.grid[x][y] is None:
+                    return False
+                if x > 0 and self.grid[x-1][y] and self.grid[x][y].value == self.grid[x-1][y].value:
+                    return False
+                if x < 3 and self.grid[x+1][y] and self.grid[x][y].value == self.grid[x+1][y].value:
+                    return False
+                if y > 0 and self.grid[x][y-1] and self.grid[x][y].value == self.grid[x][y-1].value:
+                    return False
+                if y < 3 and self.grid[x][y+1] and self.grid[x][y].value == self.grid[x][y+1].value:
+                    return False
+        return True
 
     def reset_board(self):
         self.grid = [[None for _ in range(4)] for _ in range(4)]
+        self.add_tile()
+        self.add_tile()
 
-    def draw(self, screen):
+    def draw(self, screen, game_over):
         screen.blit(self.texture, (self.pos_x, self.pos_y))
 
         for t_tile in self.trash:
@@ -127,3 +142,6 @@ class Board:
                 if self.grid[x][y] is not None:
                     self.grid[x][y].draw(screen)
                     self.grid[x][y].animate()
+
+        if(game_over):
+            screen.blit(self.game_over_texture, (self.pos_x, self.pos_y))

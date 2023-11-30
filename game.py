@@ -25,11 +25,16 @@ class Game:
                     self.score.add_points(self.board.move_tiles('u'))
                 elif event.key == pygame.K_DOWN:
                     self.score.add_points(self.board.move_tiles('d'))
+                elif event.key == pygame.K_r:
+                    self.board.reset_board()
+                    self.score.value = 0
+                    self.game_over = False
 
     def update(self):
-        # Update the game state based on input and other logic
-        pass
+        self.handle_events()
+        if(self.board.is_game_over()):
+            self.game_over = True
 
     def draw(self, screen):
-        self.board.draw(screen)
+        self.board.draw(screen, self.game_over)
         self.score.draw(screen)
