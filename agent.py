@@ -4,10 +4,11 @@ import numpy as np
 from game import Game
 from collections import deque
 from model import Linear_QNet, QTrainer
+import math
 
 MAX_MEMORY = 50000
 BATCH_SIZE = 64
-LR = 0.3
+LR = 0.25
 
 class Agent:
     def __init__(self):
@@ -16,11 +17,20 @@ class Agent:
         self.epsilon = 0  # randomness
         self.gamma = 0.3  # discount rate
         self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
-        self.model = Linear_QNet(16, 256, 4)
+        self.model = Linear_QNet(272, 1024, 4)
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
     def get_state(self, game):
-        return np.array([[cell.value if cell is not None else 0 for cell in row] for row in game.board.grid]).flatten()
+        output = []
+        for i in range(4):
+            for j in range(4):
+                if(game.board.grid[i][j] is not None):
+                    output.append([1 if game.board.grid[i][j].value == 2**k else 0 for k in range(2, 19)])
+                else:
+                    output.append([0 for _ in range(17)])
+        output = np.array(output).flatten()
+
+        return output
 
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
@@ -38,7 +48,7 @@ class Agent:
         self.trainer.train_step(state, action, reward, next_state, done)
 
     def get_action(self, state):
-        self.epsilon = 150 - self.n_games
+        self.epsilon = 100 - self.n_games
         final_move = [0,0,0,0]
         if random.randint(0, 200) < self.epsilon:
             move = random.randint(0, 3)
