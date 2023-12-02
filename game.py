@@ -3,38 +3,54 @@ import sys
 from board import Board
 from score import Score
 
+pygame.init()
+screen_width, screen_height = 800, 600
+screen = pygame.display.set_mode((screen_width, screen_height))
+pygame.display.set_caption("2048")
+
 class Game:
-    def __init__(self, screen_width, screen_height):
+    def __init__(self):
+
         self.game_over = False
         self.board = Board(200, 120)
-        self.screen_width = screen_width
-        self.screen_height = screen_height
-        self.score = Score(self.screen_width, self.screen_height)
+        self.score = Score(screen_width, screen_height)
 
-    def handle_events(self):
+    def update(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT:
-                    self.score.add_points(self.board.move_tiles('l'))
-                elif event.key == pygame.K_RIGHT:
-                    self.score.add_points(self.board.move_tiles('r'))
-                elif event.key == pygame.K_UP:
-                    self.score.add_points(self.board.move_tiles('u'))
-                elif event.key == pygame.K_DOWN:
-                    self.score.add_points(self.board.move_tiles('d'))
-                elif event.key == pygame.K_r:
-                    self.board.reset_board()
-                    self.score.value = 0
-                    self.game_over = False
 
-    def update(self):
-        self.handle_events()
         if(self.board.is_game_over()):
             self.game_over = True
-
-    def draw(self, screen):
         self.board.draw(screen, self.game_over)
         self.score.draw(screen)
+
+    def play_step(self, action): # [0, 0, 0, 1] -> [left, right, up, down]
+        prev = self.score.value
+        if(action[0] == 1):
+            self.score.add_points(self.board.move_tiles('l'))
+        elif(action[1] == 1):
+            self.score.add_points(self.board.move_tiles('r'))
+        elif(action[2] == 1):
+            self.score.add_points(self.board.move_tiles('u'))
+        elif(action[3] == 1):
+            self.score.add_points(self.board.move_tiles('d'))
+
+        reward = self.score.value - prev
+        game_over = self.game_over
+        if(game_over):
+            reward = -50
+        score = self.score.value
+        return reward, game_over, score
+
+    def reset(self):
+        self.game_over = False
+        self.board.reset_board()
+        self.score.reset_score()
+
+    def main_loop(self): # needs to be run in separete thred
+        while True:
+            screen.fill((255, 255, 255))
+            self.update()
+            pygame.display.flip()
