@@ -3,13 +3,11 @@ import random
 import numpy as np
 from game import Game
 from collections import deque
-import threading
 from model import Linear_QNet, QTrainer
 
 MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
 LR = 0.001
-
 
 class Agent:
     def __init__(self):
@@ -40,7 +38,7 @@ class Agent:
         self.trainer.train_step(state, action, reward, next_state, done)
 
     def get_action(self, state):
-        self.epsilon = 80 - self.n_games
+        self.epsilon = 150 - self.n_games
         final_move = [0,0,0,0]
         if random.randint(0, 200) < self.epsilon:
             move = random.randint(0, 3)
@@ -56,30 +54,39 @@ class Agent:
 
 def train():
     highscore = 0
+    score_sum = 0
     agent = Agent()
     game = Game()
-    threading.Thread(target=game.main_loop, args=(), daemon=True).start()
 
     while True:
+        game.update()
         state_old = agent.get_state(game)
+        game.update()
         final_move = agent.get_action(state_old)
+        game.update()
 
         reward, done, score = game.play_step(final_move)
+        game.update()
         state_new = agent.get_state(game)
+        game.update()
 
         agent.train_short_memory(state_old, final_move, reward, state_new, done)
+        game.update()
         agent.remember(state_old, final_move, reward, state_new, done)
+        game.update()
 
         if done:
             game.reset()
             agent.n_games += 1
             agent.train_long_memory()
 
+            score_sum += score
+
             if score > highscore:
                 highscore = score
                 agent.model.save()
 
-            print('Game', agent.n_games, 'Score', score, 'highscore:', highscore)
+            print('Game:', agent.n_games, '\tScore:', score, '\tHighscore:', highscore, '\tAverage:', round(score_sum / agent.n_games))
 
 
 if __name__ == '__main__':

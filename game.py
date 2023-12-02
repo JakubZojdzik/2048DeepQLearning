@@ -10,7 +10,6 @@ pygame.display.set_caption("2048")
 
 class Game:
     def __init__(self):
-
         self.game_over = False
         self.board = Board(200, 120)
         self.score = Score(screen_width, screen_height)
@@ -23,31 +22,51 @@ class Game:
 
         if(self.board.is_game_over()):
             self.game_over = True
+        screen.fill((255, 255, 255))
         self.board.draw(screen, self.game_over)
         self.score.draw(screen)
+        pygame.display.flip()
 
     def play_step(self, action): # [0, 0, 0, 1] -> [left, right, up, down]
         prev = self.score.value
+        res = 0
         if(action[0] == 1):
-            self.score.add_points(self.board.move_tiles('l'))
+            res = self.board.move_tiles('l')
+            if(res == -1):
+                reward = -10
+            else:
+                self.score.add_points(res)
         elif(action[1] == 1):
-            self.score.add_points(self.board.move_tiles('r'))
+            res = self.board.move_tiles('r')
+            if(res == -1):
+                reward = -10
+            else:
+                self.score.add_points(res)
         elif(action[2] == 1):
-            self.score.add_points(self.board.move_tiles('u'))
+            res = self.board.move_tiles('u')
+            if(res == -1):
+                reward = -10
+            else:
+                self.score.add_points(res)
         elif(action[3] == 1):
-            self.score.add_points(self.board.move_tiles('d'))
+            res = self.board.move_tiles('d')
+            if(res == -1):
+                reward = -10
+            else:
+                self.score.add_points(res)
 
-        reward = self.score.value - prev
+        if(res != -1):
+            reward = self.score.value - prev
         game_over = self.game_over
         if(game_over):
-            reward = -50
+            reward = -500
         score = self.score.value
         return reward, game_over, score
 
     def reset(self):
         self.game_over = False
         self.board.reset_board()
-        self.score.reset_score()
+        self.score.reset()
 
     def main_loop(self): # needs to be run in separete thred
         while True:

@@ -103,7 +103,9 @@ class Board:
                             self.grid[x][y].move(x+1, y)
                             self.grid[x][y] = None
                             action = True
-        if action:
+        if not action:
+            return -1
+        else:
             self.add_tile()
 
         return points
