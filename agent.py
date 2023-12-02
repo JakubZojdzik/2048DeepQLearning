@@ -5,16 +5,16 @@ from game import Game
 from collections import deque
 from model import Linear_QNet, QTrainer
 
-MAX_MEMORY = 100_000
-BATCH_SIZE = 1000
-LR = 0.001
+MAX_MEMORY = 50000
+BATCH_SIZE = 64
+LR = 0.3
 
 class Agent:
     def __init__(self):
         self.game = Game()
         self.n_games = 0
         self.epsilon = 0  # randomness
-        self.gamma = 0.9  # discount rate
+        self.gamma = 0.3  # discount rate
         self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
         self.model = Linear_QNet(16, 256, 4)
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)

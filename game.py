@@ -2,6 +2,7 @@ import pygame
 import sys
 from board import Board
 from score import Score
+import math
 
 pygame.init()
 screen_width, screen_height = 800, 600
@@ -33,33 +34,36 @@ class Game:
         if(action[0] == 1):
             res = self.board.move_tiles('l')
             if(res == -1):
-                reward = -10
+                reward = -2
             else:
                 self.score.add_points(res)
         elif(action[1] == 1):
             res = self.board.move_tiles('r')
             if(res == -1):
-                reward = -10
+                reward = -2
             else:
                 self.score.add_points(res)
         elif(action[2] == 1):
             res = self.board.move_tiles('u')
             if(res == -1):
-                reward = -10
+                reward = -2
             else:
                 self.score.add_points(res)
         elif(action[3] == 1):
             res = self.board.move_tiles('d')
             if(res == -1):
-                reward = -10
+                reward = -2
             else:
                 self.score.add_points(res)
 
         if(res != -1):
-            reward = self.score.value - prev
+            if(self.score.value == prev):
+                reward = 0
+            else:
+                reward = math.log2(self.score.value - prev)
         game_over = self.game_over
         if(game_over):
-            reward = -500
+            reward = -1
         score = self.score.value
         return reward, game_over, score
 
