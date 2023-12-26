@@ -1,18 +1,18 @@
-# import pygame
+import pygame
 import sys
 from board import Board
 from score import Score
 import math
 import torch
 
-# pygame.init()
+pygame.init()
 screen_width, screen_height = 800, 600
-# screen = pygame.display.set_mode((screen_width, screen_height))
-# pygame.display.set_caption("2048")
+screen = pygame.display.set_mode((screen_width, screen_height))
+pygame.display.set_caption("2048")
 
 
 class Game:
-    def __init__(self, moves_limit=10000, wrong_moves_limit=100):
+    def __init__(self, moves_limit=10000, wrong_moves_limit=50):
         self.game_over = False
         self.board = Board(200, 120)
         self.score = Score(screen_width, screen_height)
@@ -21,53 +21,41 @@ class Game:
         self.moves = 0
         self.wrong_moves = 0
 
-    # def update(self):
-    #     if(self.board.is_game_over()):
-    #         self.game_over = True
-    #     for event in pygame.event.get():
-    #         if event.type == pygame.QUIT:
-    #             pygame.quit()
-    #             sys.exit()
+    def update(self):
+        if(self.board.is_game_over()):
+            self.game_over = True
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
 
-    #     screen.fill((255, 255, 255))
-    #     self.board.draw(screen, self.game_over)
-    #     self.score.draw(screen)
-    #     pygame.display.flip()
+        screen.fill((255, 255, 255))
+        self.board.draw(screen, self.game_over)
+        self.score.draw(screen)
+        pygame.display.flip()
 
     def step(self, action): # 0, 1, 2, 3 -> left, right, up, down
         prev = self.score.value
         res = 0
-        if(action == 1):
+        reward = 0
+        if(action == 0):
             res = self.board.move_tiles('l')
-            if(res == -1):
-                reward = -15
-            else:
-                self.score.add_points(res)
         elif(action == 1):
             res = self.board.move_tiles('r')
-            if(res == -1):
-                reward = -15
-            else:
-                self.score.add_points(res)
-        elif(action == 1):
+        elif(action == 2):
             res = self.board.move_tiles('u')
-            if(res == -1):
-                reward = -15
-            else:
-                self.score.add_points(res)
-        elif(action == 1):
+        elif(action == 3):
             res = self.board.move_tiles('d')
-            if(res == -1):
-                reward = -15
-            else:
-                self.score.add_points(res)
 
-        if(res != -1):
-            if(self.score.value == prev):
-                reward = -2
-                self.wrong_moves += 1
+        if(res == -1): # invalid move
+            reward = -15
+            self.wrong_moves += 1
+        else:
+            self.score.add_points(res)
+            self.wrong_moves = 0
+            if(self.score.value - prev == 0):
+                reward = 0
             else:
-                self.wrong_moves = 0
                 reward = math.log2(self.score.value - prev)
 
         self.moves += 1

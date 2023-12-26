@@ -1,5 +1,6 @@
 import math
 import random
+import matplotlib
 import matplotlib.pyplot as plt
 from collections import namedtuple, deque
 
@@ -51,8 +52,19 @@ target_net.load_state_dict(policy_net.state_dict())
 
 optimizer = optim.AdamW(policy_net.parameters(), lr=LR, amsgrad=True)
 memory = ReplayMemory(10000)
-
+matplotlib.use("TkAgg")
 steps_done = 0
+
+def mypause(interval):
+    backend = plt.rcParams['backend']
+    if backend in matplotlib.rcsetup.interactive_bk:
+        figManager = matplotlib._pylab_helpers.Gcf.get_active()
+        if figManager is not None:
+            canvas = figManager.canvas
+            if canvas.figure.stale:
+                canvas.draw()
+            canvas.start_event_loop(interval)
+            return
 
 def plot_scores(show_result=False):
     plt.figure(1)
@@ -71,7 +83,7 @@ def plot_scores(show_result=False):
         means = torch.cat((torch.zeros(99), means))
         plt.plot(means.numpy())
 
-    plt.pause(0.001)  # pause a bit so that plots are updated
+    mypause(0.001)  # pause a bit so that plots are updated
 
 def select_action(state):
     global steps_done
@@ -120,12 +132,14 @@ def optimize_model():
 
 def train():
     num_episodes = 50000
+    plot_scores()
 
     for _ in range(num_episodes):
         state = env.reset()
         state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
         while(1):
             action = select_action(state)
+            env.update()
             observation, reward, terminated, truncated = env.step(action)
             reward = torch.tensor([reward], device=device)
             done = terminated or truncated
@@ -135,9 +149,11 @@ def train():
                 next_state = torch.tensor(
                     observation, dtype=torch.float32, device=device).unsqueeze(0)
             memory.push(state, action, next_state, reward)
+            env.update()
 
             state = next_state
             optimize_model()
+            env.update()
             target_net_state_dict = target_net.state_dict()
             policy_net_state_dict = policy_net.state_dict()
             for key in policy_net_state_dict:

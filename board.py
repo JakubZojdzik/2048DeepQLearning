@@ -1,5 +1,5 @@
+import pygame
 from tile import Tile
-# import pygame
 import random
 class Board:
     def __init__(self, pos_x, pos_y):
@@ -7,8 +7,8 @@ class Board:
         self.trash = []
         self.pos_x = pos_x
         self.pos_y = pos_y
-        # self.texture = pygame.image.load('assets/board.png').convert()
-        # self.game_over_texture = pygame.image.load('assets/restart.png').convert_alpha()
+        self.texture = pygame.image.load('assets/board.png').convert()
+        self.game_over_texture = pygame.image.load('assets/restart.png').convert_alpha()
 
         self.add_tile()
         self.add_tile()
@@ -130,20 +130,20 @@ class Board:
         self.add_tile()
         self.add_tile()
 
-    # def draw(self, screen, game_over):
-    #     screen.blit(self.texture, (self.pos_x, self.pos_y))
+    def draw(self, screen, game_over):
+        screen.blit(self.texture, (self.pos_x, self.pos_y))
 
-    #     for t_tile in self.trash:
-    #         t_tile.draw(screen)
-    #         t_tile.animate()
-    #         if(t_tile.pos_x == t_tile.target_x and t_tile.pos_y == t_tile.target_y):
-    #             self.trash.remove(t_tile)
+        for t_tile in self.trash:
+            t_tile.draw(screen)
+            t_tile.animate()
+            if(t_tile.pos_x == t_tile.target_x and t_tile.pos_y == t_tile.target_y):
+                self.trash.remove(t_tile)
 
-    #     for x in range(4):
-    #         for y in range(4):
-    #             if self.grid[x][y] is not None:
-    #                 self.grid[x][y].draw(screen)
-    #                 self.grid[x][y].animate()
+        for x in range(4):
+            for y in range(4):
+                if self.grid[x][y] is not None:
+                    self.grid[x][y].draw(screen)
+                    self.grid[x][y].animate()
 
-    #     if(game_over):
-    #         screen.blit(self.game_over_texture, (self.pos_x, self.pos_y))
+        if(game_over):
+            screen.blit(self.game_over_texture, (self.pos_x, self.pos_y))
