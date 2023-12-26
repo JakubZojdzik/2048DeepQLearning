@@ -55,6 +55,7 @@ memory = ReplayMemory(10000)
 matplotlib.use("TkAgg")
 steps_done = 0
 
+
 def mypause(interval):
     backend = plt.rcParams['backend']
     if backend in matplotlib.rcsetup.interactive_bk:
@@ -65,6 +66,7 @@ def mypause(interval):
                 canvas.draw()
             canvas.start_event_loop(interval)
             return
+
 
 def plot_scores(show_result=False):
     plt.figure(1)
@@ -85,6 +87,7 @@ def plot_scores(show_result=False):
 
     mypause(0.001)  # pause a bit so that plots are updated
 
+
 def select_action(state):
     global steps_done
     sample = random.random()
@@ -96,6 +99,7 @@ def select_action(state):
     else:
         choose = random.randint(0, 3)
         return torch.tensor([[choose]], device=device, dtype=torch.long)
+
 
 episode_scores = []
 
@@ -115,8 +119,7 @@ def optimize_model():
     state_action_values = policy_net(state_batch).gather(1, action_batch)
     next_state_values = torch.zeros(BATCH_SIZE, device=device)
     with torch.no_grad():
-        next_state_values[non_final_mask] = target_net(
-            non_final_next_states).max(1).values
+        next_state_values[non_final_mask] = target_net(non_final_next_states).max(1).values
 
     expected_state_action_values = (next_state_values * GAMMA) + reward_batch
 
@@ -130,6 +133,25 @@ def optimize_model():
     optimizer.step()
 
 
+def onehot_encode(state):
+    output = []
+    for i in range(4):
+        for j in range(4):
+            output.append([1 if state[i][j].value == k else 0 for k in range(1, 18)])
+    return torch.tensor(output, dtype=torch.float32).flatten()
+
+
+def onehot_decode(state):
+    output = [[0 for _ in range(4)] for _ in range(4)]
+    for i in range(4):
+        for j in range(4):
+            for k in range(1, 18):
+                if (state[i*17+j*4+k] == 1):
+                    output[i][j] = k
+                    break
+    return torch.tensor(output, dtype=torch.float32)
+
+
 def train(path):
     num_episodes = 50000
     plot_scores()
@@ -137,7 +159,8 @@ def train(path):
     for i in range(num_episodes):
         state = env.reset()
         state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
-        while(1):
+        shaped = env.shaped_current_state()
+        while (1):
             action = select_action(state)
             env.update()
             observation, reward, terminated, truncated = env.step(action)
@@ -146,9 +169,18 @@ def train(path):
             if terminated:
                 next_state = None
             else:
-                next_state = torch.tensor(
-                    observation, dtype=torch.float32, device=device).unsqueeze(0)
+                next_state = torch.tensor(observation, dtype=torch.float32, device=device).unsqueeze(0)
             memory.push(state, action, next_state, reward)
+
+            # Augmentation by rotation and flipping state
+            state = state.reshape(4, 4, 17)
+            next_state = next_state.reshape(4, 4, 17)
+            for _ in range(3):
+                state = torch.rot90(state, 1, [0, 1])
+                next_state = torch.rot90(next_state, 1, [0, 1])
+                memory.push(state.flatten(), action, next_state.flatten(), reward)
+                env.update()
+
             env.update()
 
             state = next_state
@@ -164,13 +196,14 @@ def train(path):
                 plot_scores()
                 break
 
-        if(i % 100 == 0):
+        if (i % 100 == 0):
             torch.save(policy_net.state_dict(), path)
 
     print('Complete')
     plot_scores(show_result=True)
     plt.ioff()
     plt.show()
+
 
 path = 'model.pth'
 train(path)

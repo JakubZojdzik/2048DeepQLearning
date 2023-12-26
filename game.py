@@ -81,7 +81,11 @@ class Game:
         for i in range(4):
             for j in range(4):
                 if(self.board.grid[i][j] is not None):
-                    output.append([1 if self.board.grid[i][j].value == 2**k else 0 for k in range(2, 19)])
+                    output.append([1 if self.board.grid[i][j].value.bit_length == k else 0 for k in range(2, 19)])
                 else:
                     output.append([0 for _ in range(17)])
         return torch.tensor(output, dtype=torch.float32).flatten()
+
+    # def shaped_current_state(self):
+    #     output = [[(0 if self.board[i][j] is None else self.board.grid[i][j].value.bit_length()-1) for j in range(4)] for i in range(4)]
+    #     return torch.tensor(output, dtype=torch.float32)
