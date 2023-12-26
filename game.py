@@ -12,7 +12,7 @@ pygame.display.set_caption("2048")
 
 
 class Game:
-    def __init__(self, moves_limit=10000, wrong_moves_limit=50):
+    def __init__(self, moves_limit=10000, wrong_moves_limit=32):
         self.game_over = False
         self.board = Board(200, 120)
         self.score = Score(screen_width, screen_height)

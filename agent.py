@@ -33,14 +33,14 @@ class ReplayMemory:
         return len(self.memory)
 
 
-BATCH_SIZE = 128  # number of transitions sampled from the replay buffer
+BATCH_SIZE = 512  # number of transitions sampled from the replay buffer
 GAMMA = 0.99  # discount factor as mentioned in the previous section
-EPS_START = 0.9  # starting value of epsilon
+EPS_START = 0.95  # starting value of epsilon
 EPS_END = 0.05  # final value of epsilon
 # controls the rate of exponential decay of epsilon, higher means a slower decay
-EPS_DECAY = 1000
+EPS_DECAY = 500
 TAU = 0.005  # update rate of the target network
-LR = 1e-4  # learning rate of the ``AdamW`` optimizer
+LR = 1e-3  # learning rate of the ``AdamW`` optimizer
 
 n_actions = 4  # up, down, left, right
 state = env.reset()
@@ -130,11 +130,11 @@ def optimize_model():
     optimizer.step()
 
 
-def train():
+def train(path):
     num_episodes = 50000
     plot_scores()
 
-    for _ in range(num_episodes):
+    for i in range(num_episodes):
         state = env.reset()
         state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
         while(1):
@@ -164,9 +164,13 @@ def train():
                 plot_scores()
                 break
 
+        if(i % 100 == 0):
+            torch.save(policy_net.state_dict(), path)
+
     print('Complete')
     plot_scores(show_result=True)
     plt.ioff()
     plt.show()
 
-train()
+path = 'model.pth'
+train(path)
