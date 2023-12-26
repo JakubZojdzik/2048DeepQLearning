@@ -1,7 +1,7 @@
-import pygame
+# import pygame
 
-pygame.font.init()
-my_font = pygame.font.Font('assets/rajdhani.ttf', 60)
+# pygame.font.init()
+# my_font = pygame.font.Font('assets/rajdhani.ttf', 60)
 
 
 class Score:
@@ -16,6 +16,6 @@ class Score:
     def reset(self):
         self.value = 0
 
-    def draw(self, screen):
-        text_surface = my_font.render('Score: ' + str(self.value), True, (119, 110, 101))
-        screen.blit(text_surface, ((self.screen_width - text_surface.get_width()) // 2, 0))
+    # def draw(self, screen):
+    #     text_surface = my_font.render('Score: ' + str(self.value), True, (119, 110, 101))
+    #     screen.blit(text_surface, ((self.screen_width - text_surface.get_width()) // 2, 0))

@@ -1,103 +1,156 @@
-import torch
-import random
-import numpy as np
-from game import Game
-from collections import deque
-from model import Linear_QNet, QTrainer
 import math
+import random
+import matplotlib.pyplot as plt
+from collections import namedtuple, deque
 
-MAX_MEMORY = 50000
-BATCH_SIZE = 64
-LR = 0.25
+from game import Game
+from model import DQN
 
-class Agent:
-    def __init__(self):
-        self.game = Game()
-        self.n_games = 0
-        self.epsilon = 0  # randomness
-        self.gamma = 0.3  # discount rate
-        self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
-        self.model = Linear_QNet(272, 1024, 4)
-        self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
+import torch
+import torch.nn as nn
+import torch.optim as optim
 
-    def get_state(self, game):
-        output = []
-        for i in range(4):
-            for j in range(4):
-                if(game.board.grid[i][j] is not None):
-                    output.append([1 if game.board.grid[i][j].value == 2**k else 0 for k in range(2, 19)])
-                else:
-                    output.append([0 for _ in range(17)])
-        output = np.array(output).flatten()
+env = Game()
+plt.ion()
 
-        return output
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    def remember(self, state, action, reward, next_state, done):
-        self.memory.append((state, action, reward, next_state, done))
+Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
 
-    def train_long_memory(self):
-        if len(self.memory) > BATCH_SIZE:
-            mini_sample = random.sample(self.memory, BATCH_SIZE) # list of tuples
-        else:
-            mini_sample = self.memory
 
-        states, actions, rewards, next_states, dones = zip(*mini_sample)
-        self.trainer.train_step(states, actions, rewards, next_states, dones)
+class ReplayMemory:
+    def __init__(self, capacity):
+        self.memory = deque([], maxlen=capacity)
 
-    def train_short_memory(self, state, action, reward, next_state, done):
-        self.trainer.train_step(state, action, reward, next_state, done)
+    def push(self, *args):
+        self.memory.append(Transition(*args))
 
-    def get_action(self, state):
-        self.epsilon = 100 - self.n_games
-        final_move = [0,0,0,0]
-        if random.randint(0, 200) < self.epsilon:
-            move = random.randint(0, 3)
-            final_move[move] = 1
-        else:
-            state0 = torch.tensor(state, dtype=torch.float)
-            prediction = self.model(state0)
-            move = torch.argmax(prediction).item()
-            final_move[move] = 1
+    def sample(self, batch_size):
+        return random.sample(self.memory, batch_size)
 
-        return final_move
+    def __len__(self):
+        return len(self.memory)
+
+
+BATCH_SIZE = 128  # number of transitions sampled from the replay buffer
+GAMMA = 0.99  # discount factor as mentioned in the previous section
+EPS_START = 0.9  # starting value of epsilon
+EPS_END = 0.05  # final value of epsilon
+# controls the rate of exponential decay of epsilon, higher means a slower decay
+EPS_DECAY = 1000
+TAU = 0.005  # update rate of the target network
+LR = 1e-4  # learning rate of the ``AdamW`` optimizer
+
+n_actions = 4  # up, down, left, right
+state = env.reset()
+n_observations = len(state)
+
+policy_net = DQN(n_observations, n_actions).to(device)
+target_net = DQN(n_observations, n_actions).to(device)
+target_net.load_state_dict(policy_net.state_dict())
+
+optimizer = optim.AdamW(policy_net.parameters(), lr=LR, amsgrad=True)
+memory = ReplayMemory(10000)
+
+steps_done = 0
+
+def plot_scores(show_result=False):
+    plt.figure(1)
+    scores_t = torch.tensor(episode_scores, dtype=torch.float)
+    if show_result:
+        plt.title('Result')
+    else:
+        plt.clf()
+        plt.title('Training...')
+    plt.xlabel('Episode')
+    plt.ylabel('Score')
+    plt.plot(scores_t.numpy())
+    # Take 100 episode averages and plot them too
+    if len(scores_t) >= 100:
+        means = scores_t.unfold(0, 100, 1).mean(1).view(-1)
+        means = torch.cat((torch.zeros(99), means))
+        plt.plot(means.numpy())
+
+    plt.pause(0.001)  # pause a bit so that plots are updated
+
+def select_action(state):
+    global steps_done
+    sample = random.random()
+    eps_threshold = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * steps_done / EPS_DECAY)
+    steps_done += 1
+    if sample > eps_threshold:
+        with torch.no_grad():
+            return policy_net(state).max(1).indices.view(1, 1)
+    else:
+        choose = random.randint(0, 3)
+        return torch.tensor([[choose]], device=device, dtype=torch.long)
+
+episode_scores = []
+
+
+def optimize_model():
+    if len(memory) < BATCH_SIZE:
+        return
+    transitions = memory.sample(BATCH_SIZE)
+    batch = Transition(*zip(*transitions))
+
+    non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, batch.next_state)), device=device, dtype=torch.bool)
+    non_final_next_states = torch.cat([s for s in batch.next_state if s is not None])
+    state_batch = torch.cat(batch.state)
+    action_batch = torch.cat(batch.action)
+    reward_batch = torch.cat(batch.reward)
+
+    state_action_values = policy_net(state_batch).gather(1, action_batch)
+    next_state_values = torch.zeros(BATCH_SIZE, device=device)
+    with torch.no_grad():
+        next_state_values[non_final_mask] = target_net(
+            non_final_next_states).max(1).values
+
+    expected_state_action_values = (next_state_values * GAMMA) + reward_batch
+
+    criterion = nn.SmoothL1Loss()
+    loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
+
+    optimizer.zero_grad()
+    loss.backward()
+
+    torch.nn.utils.clip_grad_value_(policy_net.parameters(), 100)
+    optimizer.step()
 
 
 def train():
-    highscore = 0
-    score_sum = 0
-    agent = Agent()
-    game = Game()
+    num_episodes = 50000
 
-    while True:
-        game.update()
-        state_old = agent.get_state(game)
-        game.update()
-        final_move = agent.get_action(state_old)
-        game.update()
+    for _ in range(num_episodes):
+        state = env.reset()
+        state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
+        while(1):
+            action = select_action(state)
+            observation, reward, terminated, truncated = env.step(action)
+            reward = torch.tensor([reward], device=device)
+            done = terminated or truncated
+            if terminated:
+                next_state = None
+            else:
+                next_state = torch.tensor(
+                    observation, dtype=torch.float32, device=device).unsqueeze(0)
+            memory.push(state, action, next_state, reward)
 
-        reward, done, score = game.play_step(final_move)
-        game.update()
-        state_new = agent.get_state(game)
-        game.update()
+            state = next_state
+            optimize_model()
+            target_net_state_dict = target_net.state_dict()
+            policy_net_state_dict = policy_net.state_dict()
+            for key in policy_net_state_dict:
+                target_net_state_dict[key] = policy_net_state_dict[key] * TAU + target_net_state_dict[key]*(1-TAU)
+            target_net.load_state_dict(target_net_state_dict)
+            if done:
+                episode_scores.append(env.score.value)
+                plot_scores()
+                break
 
-        agent.train_short_memory(state_old, final_move, reward, state_new, done)
-        game.update()
-        agent.remember(state_old, final_move, reward, state_new, done)
-        game.update()
+    print('Complete')
+    plot_scores(show_result=True)
+    plt.ioff()
+    plt.show()
 
-        if done:
-            game.reset()
-            agent.n_games += 1
-            agent.train_long_memory()
-
-            score_sum += score
-
-            if score > highscore:
-                highscore = score
-                agent.model.save()
-
-            print('Game:', agent.n_games, '\tScore:', score, '\tHighscore:', highscore, '\tAverage:', round(score_sum / agent.n_games))
-
-
-if __name__ == '__main__':
-    train()
+train()
