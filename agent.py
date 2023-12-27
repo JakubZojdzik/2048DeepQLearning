@@ -56,7 +56,7 @@ matplotlib.use("TkAgg")
 steps_done = 0
 
 
-def mypause(interval): # to not steal window focus
+def mypause(interval): # to prevent stealing window focus
     backend = plt.rcParams['backend']
     if backend in matplotlib.rcsetup.interactive_bk:
         figManager = matplotlib._pylab_helpers.Gcf.get_active()

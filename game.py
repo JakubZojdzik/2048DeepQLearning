@@ -35,7 +35,6 @@ class Game:
         pygame.display.flip()
 
     def step(self, action): # 0, 1, 2, 3 -> up, right, down, left
-        prev = self.score.value
         res = 0
         reward = 0
         if(action == 0):
@@ -53,10 +52,10 @@ class Game:
         else:
             self.score.add_points(res)
             self.wrong_moves = 0
-            if(self.score.value - prev == 0):
+            if(res == 0):
                 reward = 0
             else:
-                reward = math.log2(self.score.value - prev)
+                reward = math.log2(res)
 
         self.moves += 1
         game_over = self.game_over
@@ -85,7 +84,3 @@ class Game:
                 else:
                     output.append([0 for _ in range(17)])
         return torch.tensor(output, dtype=torch.float32).flatten()
-
-    # def shaped_current_state(self):
-    #     output = [[(0 if self.board[i][j] is None else self.board.grid[i][j].value.bit_length()-1) for j in range(4)] for i in range(4)]
-    #     return torch.tensor(output, dtype=torch.float32)
