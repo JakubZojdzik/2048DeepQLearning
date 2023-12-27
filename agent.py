@@ -33,7 +33,7 @@ class ReplayMemory:
         return len(self.memory)
 
 
-BATCH_SIZE = 512  # number of transitions sampled from the replay buffer
+BATCH_SIZE = 64  # number of transitions sampled from the replay buffer
 GAMMA = 0.99  # discount factor as mentioned in the previous section
 EPS_START = 0.95  # starting value of epsilon
 EPS_END = 0.05  # final value of epsilon
@@ -56,7 +56,7 @@ matplotlib.use("TkAgg")
 steps_done = 0
 
 
-def mypause(interval):
+def mypause(interval): # to not steal window focus
     backend = plt.rcParams['backend']
     if backend in matplotlib.rcsetup.interactive_bk:
         figManager = matplotlib._pylab_helpers.Gcf.get_active()
@@ -79,6 +79,7 @@ def plot_scores(show_result=False):
     plt.xlabel('Episode')
     plt.ylabel('Score')
     plt.plot(scores_t.numpy())
+
     # Take 100 episode averages and plot them too
     if len(scores_t) >= 100:
         means = scores_t.unfold(0, 100, 1).mean(1).view(-1)
@@ -137,7 +138,7 @@ def onehot_encode(state):
     output = []
     for i in range(4):
         for j in range(4):
-            output.append([1 if state[i][j].value == k else 0 for k in range(1, 18)])
+            output.append([1 if state[i][j] == k else 0 for k in range(1, 18)])
     return torch.tensor(output, dtype=torch.float32).flatten()
 
 
@@ -145,9 +146,9 @@ def onehot_decode(state):
     output = [[0 for _ in range(4)] for _ in range(4)]
     for i in range(4):
         for j in range(4):
-            for k in range(1, 18):
-                if (state[i*17+j*4+k] == 1):
-                    output[i][j] = k
+            for k in range(0, 17):
+                if (state[i*17*4 + j*17 + k] == 1):
+                    output[i][j] = k+1
                     break
     return torch.tensor(output, dtype=torch.float32)
 
@@ -159,7 +160,6 @@ def train(path):
     for i in range(num_episodes):
         state = env.reset()
         state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
-        shaped = env.shaped_current_state()
         while (1):
             action = select_action(state)
             env.update()
@@ -172,14 +172,50 @@ def train(path):
                 next_state = torch.tensor(observation, dtype=torch.float32, device=device).unsqueeze(0)
             memory.push(state, action, next_state, reward)
 
-            # Augmentation by rotation and flipping state
-            state = state.reshape(4, 4, 17)
-            next_state = next_state.reshape(4, 4, 17)
+            # Augmentation
+            state = state.squeeze(0)
+            state = onehot_decode(state)
+            observation = onehot_decode(observation)
+            action = action.unsqueeze(0)
+
+            # Augmentation by flipping horizontally
+            state = torch.flip(state, [1])
+            observation = torch.flip(observation, [1])
+            if(action % 2 == 1):
+                action = (action + 2) % 4
+            new_state = torch.tensor(onehot_encode(state), dtype=torch.float32, device=device).unsqueeze(0)
+            new_next_state = torch.tensor(onehot_encode(observation), dtype=torch.float32, device=device).unsqueeze(0)
+            new_action = torch.tensor([[action]], device=device, dtype=torch.long)
+            memory.push(new_state, new_action, new_next_state, reward)
+            if(action % 2 == 1):
+                action = (action + 2) % 4
+
+            # Augmentation by flipping vertically
+            state = torch.flip(state, [0, 1])
+            observation = torch.flip(observation, [0, 1])
+            if(action % 2 == 0):
+                action = (action + 2) % 4
+            new_state = torch.tensor(onehot_encode(state), dtype=torch.float32, device=device).unsqueeze(0)
+            new_next_state = torch.tensor(onehot_encode(observation), dtype=torch.float32, device=device).unsqueeze(0)
+            new_action = torch.tensor([[action]], device=device, dtype=torch.long)
+            memory.push(new_state, new_action, new_next_state, reward)
+            if(action % 2 == 0):
+                action = (action + 2) % 4
+
+            # back to original state
+            state = torch.flip(state, [0])
+            observation = torch.flip(observation, [0])
+
+
+            # Augmentation by rotation
             for _ in range(3):
-                state = torch.rot90(state, 1, [0, 1])
-                next_state = torch.rot90(next_state, 1, [0, 1])
-                memory.push(state.flatten(), action, next_state.flatten(), reward)
-                env.update()
+                state = torch.rot90(state)
+                observation = torch.rot90(observation)
+                action = (action - 1) % 4
+                new_state = torch.tensor(onehot_encode(state), dtype=torch.float32, device=device).unsqueeze(0)
+                new_next_state = torch.tensor(onehot_encode(observation), dtype=torch.float32, device=device).unsqueeze(0)
+                new_action = torch.tensor([[action]], device=device, dtype=torch.long)
+                memory.push(new_state, new_action, new_next_state, reward)
 
             env.update()
 

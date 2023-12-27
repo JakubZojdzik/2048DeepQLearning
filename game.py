@@ -34,18 +34,18 @@ class Game:
         self.score.draw(screen)
         pygame.display.flip()
 
-    def step(self, action): # 0, 1, 2, 3 -> left, right, up, down
+    def step(self, action): # 0, 1, 2, 3 -> up, right, down, left
         prev = self.score.value
         res = 0
         reward = 0
         if(action == 0):
-            res = self.board.move_tiles('l')
+            res = self.board.move_tiles('u')
         elif(action == 1):
             res = self.board.move_tiles('r')
         elif(action == 2):
-            res = self.board.move_tiles('u')
-        elif(action == 3):
             res = self.board.move_tiles('d')
+        elif(action == 3):
+            res = self.board.move_tiles('l')
 
         if(res == -1): # invalid move
             reward = -15
@@ -68,8 +68,8 @@ class Game:
         return self.current_state(), reward, game_over, truncate
 
     def reset(self):
-        self.game_over = False
         self.board.reset_board()
+        self.game_over = False
         self.score.reset()
         self.moves = 0
         self.wrong_moves = 0
@@ -81,7 +81,7 @@ class Game:
         for i in range(4):
             for j in range(4):
                 if(self.board.grid[i][j] is not None):
-                    output.append([1 if self.board.grid[i][j].value.bit_length == k else 0 for k in range(2, 19)])
+                    output.append([1 if self.board.grid[i][j].value.bit_length() == k else 0 for k in range(2, 19)])
                 else:
                     output.append([0 for _ in range(17)])
         return torch.tensor(output, dtype=torch.float32).flatten()
