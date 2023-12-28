@@ -56,6 +56,7 @@ class Agent:
             tau (float, optional): update rate of the target network. Defaults to 0.005.
             lr (float, optional): learning rate of the ``AdamW`` optimizer. Defaults to 1e-3.
             memory_capacity (int, optional): capacity of the replay buffer. Defaults to 1000.
+            plot (bool, optional): whether to plot the training result. Defaults to True.
 
         Returns:
             Agent: an Agent object
