@@ -40,7 +40,7 @@ class ReplayMemory:
         return len(self.memory)
 
 class Agent:
-    def __init__(self, source_path = None, dest_path = None, batch_size = 64, gamma = 0.99, eps_start = 0.95, eps_end = 0.5, eps_decay = 500, tau = 0.005, lr = 1e-3, memory_capacity = 1000):
+    def __init__(self, source_path = None, dest_path = None, batch_size = 64, gamma = 0.99, eps_start = 0.95, eps_end = 0.05, eps_decay = 500, tau = 0.005, lr = 1e-3, memory_capacity = 1000):
         """
         Agent class for training the DQN model. It can be also used for testing the trained model.
         If you want to test the trained model, you can ignore all the parameters and use the default values.
@@ -146,7 +146,8 @@ class Agent:
 
         expected_state_action_values = (next_state_values * self.gamma) + reward_batch
 
-        criterion = nn.SmoothL1Loss()
+        # criterion = nn.SmoothL1Loss()
+        criterion = nn.MSELoss()
         loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
 
         self.optimizer.zero_grad()
@@ -175,7 +176,7 @@ class Agent:
         return torch.tensor(output, dtype=torch.float32)
 
 
-    def train(self, num_episodes = 50000, path = None):
+    def train(self, num_episodes = 50000):
         self.plot_scores()
 
         for i in range(num_episodes):
