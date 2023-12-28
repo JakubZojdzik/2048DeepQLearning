@@ -3,8 +3,8 @@ import pygame
 texture_path = 'assets/tiles/'
 tile_size = 85
 padding = 12
-move_speed = 10
-alpha_speed = 10
+move_speed = 20
+alpha_speed = 20
 
 class Tile:
     def __init__(self, value, col, row, offset_x, offset_y, alpha=255):

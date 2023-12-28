@@ -84,3 +84,6 @@ class Game:
                 else:
                     output.append([0 for _ in range(17)])
         return torch.tensor(output, dtype=torch.float32).flatten()
+
+    def current_score(self):
+        return self.score.value
