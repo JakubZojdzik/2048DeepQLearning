@@ -2,8 +2,9 @@ import math
 import random
 import matplotlib
 import matplotlib.pyplot as plt
-from collections import namedtuple, deque
 
+from collections import namedtuple, deque
+import logging
 from game import Game
 from model import DQN
 
@@ -40,7 +41,7 @@ class ReplayMemory:
         return len(self.memory)
 
 class Agent:
-    def __init__(self, source_path = None, dest_path = None, batch_size = 64, gamma = 0.99, eps_start = 0.95, eps_end = 0.05, eps_decay = 500, tau = 0.005, lr = 1e-3, memory_capacity = 1000, plot=True):
+    def __init__(self, source_path = None, dest_path = None, batch_size = 64, gamma = 0.99, eps_start = 0.95, eps_end = 0.05, eps_decay = 500, tau = 0.005, lr = 1e-3, memory_capacity = 1000, plotting = True, logs = False):
         """
         Agent class for training the DQN model. It can be also used for testing the trained model.
         If you want to test the trained model, you can ignore all the parameters and use the default values.
@@ -56,7 +57,8 @@ class Agent:
             tau (float, optional): update rate of the target network. Defaults to 0.005.
             lr (float, optional): learning rate of the ``AdamW`` optimizer. Defaults to 1e-3.
             memory_capacity (int, optional): capacity of the replay buffer. Defaults to 1000.
-            plot (bool, optional): whether to plot the training result. Defaults to True.
+            plotting (bool, optional): whether to plot the training result. Defaults to True.
+            logs (bool, optional): whether to save the training logs in ``training.log``. Defaults to False.
 
         Returns:
             Agent: an Agent object
@@ -72,8 +74,13 @@ class Agent:
         self.tau = tau
         self.lr = lr
         self.memory_capacity = memory_capacity
-        self.plot = plot
+        self.plotting = plotting
+        self.logs = logs
         self.env = Game()
+
+        if(self.logs):
+            logging.basicConfig(filename='training.log', level=logging.INFO, format='[%(asctime)s] - %(message)s')
+
 
         n_actions = 4  # up, down, left, right
         state = self.env.reset()
@@ -89,7 +96,7 @@ class Agent:
         self.optimizer = optim.AdamW(self.policy_net.parameters(), lr=self.lr, amsgrad=True)
         self.memory = ReplayMemory(memory_capacity)
 
-        if(self.plot):
+        if(self.plotting):
             matplotlib.use("TkAgg")
             plt.ion()
         self.steps_done = 0
@@ -179,8 +186,8 @@ class Agent:
         return torch.tensor(output, dtype=torch.float32)
 
 
-    def train(self, num_episodes = 50000):
-        if(self.plot):
+    def train(self, num_episodes = 100000):
+        if(self.plotting):
             self.plot_scores()
 
         for i in range(num_episodes):
@@ -252,22 +259,26 @@ class Agent:
                     target_net_state_dict[key] = policy_net_state_dict[key] * self.tau + target_net_state_dict[key]*(1-self.tau)
                 self.target_net.load_state_dict(target_net_state_dict)
                 if done:
-                    if(self.plot):
+                    if(self.plotting):
                         self.plot_scores()
                     self.episode_scores.append(self.env.current_score())
                     break
 
             if (i % 50 == 0 and self.dest_path is not None):
-                torch.save(self.policy_net.state_dict(), self.dest_path)
+                if(self.dest_path is not None):
+                    torch.save(self.policy_net.state_dict(), self.dest_path)
+                if(self.logs):
+                    avg = sum(self.episode_scores[-50:]) / 50
+                    logging.info(f'Episode {i + 1}/{num_episodes} - Average score: {avg}')
 
         print('Complete')
-        if(self.plot):
+        if(self.plotting):
             self.plot_scores(show_result=True)
             plt.ioff()
             plt.show()
 
     def play(self, num_episodes=50):
-        if(self.plot):
+        if(self.plotting):
             self.plot_scores()
         for _ in range(num_episodes):
             state = self.env.reset()
@@ -280,12 +291,12 @@ class Agent:
 
                 if done:
                     self.episode_scores.append(self.env.current_score())
-                    if(self.plot):
+                    if(self.plotting):
                         self.plot_scores()
                     break
 
         print('Complete')
-        if(self.plot):
+        if(self.plotting):
             self.plot_scores(show_result=True)
             plt.ioff()
             plt.show()
