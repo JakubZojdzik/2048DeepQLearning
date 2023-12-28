@@ -107,6 +107,7 @@ class Agent:
     def plot_scores(self, show_result=False):
         plt.figure(1)
         scores_t = torch.tensor(self.episode_scores, dtype=torch.float)
+        
         if show_result:
             plt.title('Result')
         else:
@@ -187,12 +188,14 @@ class Agent:
 
 
     def train(self, num_episodes = 100000):
+        logging.info(f'Start training for {num_episodes} episodes')
         if(self.plotting):
             self.plot_scores()
 
         for i in range(num_episodes):
             state = self.env.reset()
-            state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
+            state = state.to(dtype=torch.float32).unsqueeze(0)
+
             while (1):
                 self.env.update()
                 action = self.select_action(state)
@@ -202,7 +205,7 @@ class Agent:
                 if terminated:
                     next_state = None
                 else:
-                    next_state = torch.tensor(observation, dtype=torch.float32, device=device).unsqueeze(0)
+                    next_state = observation.clone().detach().to(dtype=torch.float32).unsqueeze(0)
                 self.memory.push(state, action, next_state, reward)
 
                 # Augmentation
@@ -216,8 +219,9 @@ class Agent:
                 observation = torch.flip(observation, [1])
                 if(action % 2 == 1):
                     action = (action + 2) % 4
-                new_state = torch.tensor(self.onehot_encode(state), dtype=torch.float32, device=device).unsqueeze(0)
-                new_next_state = torch.tensor(self.onehot_encode(observation), dtype=torch.float32, device=device).unsqueeze(0)
+
+                new_state = self.onehot_encode(state).clone().detach().to(dtype=torch.float32).unsqueeze(0)
+                new_next_state = self.onehot_encode(observation).clone().detach().to(dtype=torch.float32).unsqueeze(0)
                 new_action = torch.tensor([[action]], device=device, dtype=torch.long)
                 self.memory.push(new_state, new_action, new_next_state, reward)
                 if(action % 2 == 1):
@@ -228,8 +232,8 @@ class Agent:
                 observation = torch.flip(observation, [0, 1])
                 if(action % 2 == 0):
                     action = (action + 2) % 4
-                new_state = torch.tensor(self.onehot_encode(state), dtype=torch.float32, device=device).unsqueeze(0)
-                new_next_state = torch.tensor(self.onehot_encode(observation), dtype=torch.float32, device=device).unsqueeze(0)
+                new_state = self.onehot_encode(state).clone().detach().to(dtype=torch.float32).unsqueeze(0)
+                new_next_state = self.onehot_encode(observation).clone().detach().to(dtype=torch.float32).unsqueeze(0)
                 new_action = torch.tensor([[action]], device=device, dtype=torch.long)
                 self.memory.push(new_state, new_action, new_next_state, reward)
                 if(action % 2 == 0):
@@ -245,8 +249,8 @@ class Agent:
                     state = torch.rot90(state)
                     observation = torch.rot90(observation)
                     action = (action - 1) % 4
-                    new_state = torch.tensor(self.onehot_encode(state), dtype=torch.float32, device=device).unsqueeze(0)
-                    new_next_state = torch.tensor(self.onehot_encode(observation), dtype=torch.float32, device=device).unsqueeze(0)
+                    new_state = self.onehot_encode(state).clone().detach().to(dtype=torch.float32).unsqueeze(0)
+                    new_next_state = self.onehot_encode(observation).clone().detach().to(dtype=torch.float32).unsqueeze(0)
                     new_action = torch.tensor([[action]], device=device, dtype=torch.long)
                     self.memory.push(new_state, new_action, new_next_state, reward)
 
@@ -264,7 +268,7 @@ class Agent:
                     self.episode_scores.append(self.env.current_score())
                     break
 
-            if (i % 50 == 0 and self.dest_path is not None):
+            if (i != 0 and i % 50 == 0 and self.dest_path is not None):
                 if(self.dest_path is not None):
                     torch.save(self.policy_net.state_dict(), self.dest_path)
                 if(self.logs):
