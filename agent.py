@@ -310,3 +310,28 @@ class Agent:
             self.plot_scores(show_result=True)
             plt.ioff()
             plt.show()
+
+
+    def random_play(self, num_episodes=50):
+        if(self.plotting):
+            self.plot_scores()
+        for _ in range(num_episodes):
+            state = self.env.reset()
+            state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
+            while (1):
+                self.env.update()
+                action = random.randint(0, 3)
+                _, _, terminated, truncated = self.env.step(action)
+                done = terminated or truncated
+
+                if done:
+                    self.episode_scores.append(self.env.current_score())
+                    if(self.plotting):
+                        self.plot_scores()
+                    break
+
+        print('Complete')
+        if(self.plotting):
+            self.plot_scores(show_result=True)
+            plt.ioff()
+            plt.show()

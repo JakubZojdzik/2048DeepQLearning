@@ -43,4 +43,4 @@ python main.py
 If you wish to train the model with different hyperparameters, pass your custom parameters to Agent constructor and run `train()` method. You can change network structure in `model.py` file.
 
 ## Results
-The average score of the trained model is around 2000 points. However, the model is not able to win the game and create a 2048 tile. Feel free to iterate on the hyperparameters and network architecture to improve performance.
+In progress
