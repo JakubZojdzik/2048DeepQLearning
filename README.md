@@ -3,15 +3,24 @@
 ## Introduction
 This repository contains a Python implementation of a neural network trained using Deep Q-Learning to play the game 2048. It is very basic project created mostly by following [pytorch reinforcement learning tutorial](https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html).
 
-Network contains 4 layers:
+### Network Architecture
+
+Network contains 4 fully connected layers:
 - Input layer: 272 nodes (board 4x4, onehot encoding for tile value)
 - 2 hidden layers: 256 nodes
 - Output layer: 4 nodes (4 actions: up, right, down, left)
+
 Activation function is leaky ReLU between each layer. Cost is calculated with `SmoothL1Loss` function with beta = 1.
 
-Rewards
+### Reward Scheme
 
-Agent implements experience replay with memory of 1000 (state, action, next_state, reward) tuples in queue. Each batch is randomly chosen from memory.
+Reward for move is sum of binary logarithms of values of connected tiles. If agent perfoms move thad doesn't change enviroment state at all, it receives negative reward: -15. Loosing game is punished with negative reward: -10.
+
+In order to prevent getting stuck making the same invalid action, after one of these, if agent decide to do it again, it is forced to make random move.
+
+### Experience Replay
+
+Agent implements experience replay with memory of 1000 (state, action, next_state, reward) tuples in queue. Each batch is randomly chosen from memory. Gradient descent is perfomed after each move.
 
 
 ## Project Structure
