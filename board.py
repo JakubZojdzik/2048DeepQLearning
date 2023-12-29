@@ -22,6 +22,7 @@ class Board:
 
     def move_tiles(self, direction):
         points = 0
+        reward = 0
         for i in range(4):
             for j in range(4):
                 if(self.grid[i][j] is not None):
@@ -41,6 +42,7 @@ class Board:
                         elif(self.grid[x][y-1].value == self.grid[x][y].value and self.grid[x][y-1].joinable and self.grid[x][y].joinable):
                             self.grid[x][y-1].update(self.grid[x][y-1].value * 2)
                             points += self.grid[x][y-1].value * 2
+                            reward += self.grid[x][y-1].value.bit_length()
                             self.grid[x][y-1].joinable = False
                             self.grid[x][y].move(x, y-1)
                             self.trash.append(self.grid[x][y])
@@ -60,6 +62,7 @@ class Board:
                         elif(self.grid[x][y+1].value == self.grid[x][y].value and self.grid[x][y+1].joinable and self.grid[x][y].joinable):
                             self.grid[x][y+1].update(self.grid[x][y+1].value * 2)
                             points += self.grid[x][y+1].value * 2
+                            reward += self.grid[x][y+1].value.bit_length()
                             self.grid[x][y+1].joinable = False
                             self.grid[x][y].move(x, y+1)
                             self.trash.append(self.grid[x][y])
@@ -79,6 +82,7 @@ class Board:
                         elif(self.grid[x-1][y].value == self.grid[x][y].value and self.grid[x-1][y].joinable and self.grid[x][y].joinable):
                             self.grid[x-1][y].update(self.grid[x-1][y].value * 2)
                             points += self.grid[x-1][y].value * 2
+                            reward += self.grid[x-1][y].value.bit_length()
                             self.grid[x-1][y].joinable = False
                             self.grid[x][y].move(x-1, y)
                             self.trash.append(self.grid[x][y])
@@ -98,17 +102,18 @@ class Board:
                         elif(self.grid[x+1][y].value == self.grid[x][y].value and self.grid[x+1][y].joinable and self.grid[x][y].joinable):
                             self.grid[x+1][y].update(self.grid[x+1][y].value * 2)
                             points += self.grid[x+1][y].value * 2
+                            reward += self.grid[x+1][y].value.bit_length()
                             self.grid[x+1][y].joinable = False
                             self.trash.append(self.grid[x][y])
                             self.grid[x][y].move(x+1, y)
                             self.grid[x][y] = None
                             action = True
         if not action:
-            return -1
+            return -1, -1
         else:
             self.add_tile()
 
-        return points
+        return points, reward
 
     def is_game_over(self):
         for x in range(4):

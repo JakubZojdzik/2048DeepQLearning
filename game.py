@@ -35,27 +35,23 @@ class Game:
         pygame.display.flip()
 
     def step(self, action): # 0, 1, 2, 3 -> up, right, down, left
-        res = 0
+        points = 0
         reward = 0
         if(action == 0):
-            res = self.board.move_tiles('u')
+            points, reward = self.board.move_tiles('u')
         elif(action == 1):
-            res = self.board.move_tiles('r')
+            points, reward = self.board.move_tiles('r')
         elif(action == 2):
-            res = self.board.move_tiles('d')
+            points, reward = self.board.move_tiles('d')
         elif(action == 3):
-            res = self.board.move_tiles('l')
+            points, reward = self.board.move_tiles('l')
 
-        if(res == -1): # invalid move
+        if(points == -1): # invalid move
             reward = -15
             self.wrong_moves += 1
         else:
-            self.score.add_points(res)
+            self.score.add_points(points)
             self.wrong_moves = 0
-            if(res == 0):
-                reward = 0
-            else:
-                reward = math.log2(res)
 
         self.moves += 1
         game_over = self.game_over
