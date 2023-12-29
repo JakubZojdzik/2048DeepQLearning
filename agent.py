@@ -81,7 +81,6 @@ class Agent:
         if(self.logs):
             logging.basicConfig(filename='training.log', level=logging.INFO, format='[%(asctime)s] - %(message)s')
 
-
         n_actions = 4  # up, down, left, right
         state = self.env.reset()
         n_observations = len(state)
@@ -107,7 +106,7 @@ class Agent:
     def plot_scores(self, show_result=False):
         plt.figure(1)
         scores_t = torch.tensor(self.episode_scores, dtype=torch.float)
-        
+
         if show_result:
             plt.title('Result')
         else:
@@ -126,9 +125,11 @@ class Agent:
         mypause(0.001)  # pause a bit so that plots are updated
 
 
-    def select_action(self, state):
+    def select_action(self, state, train=True):
         sample = random.random()
         eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * math.exp(-1. * self.steps_done / self.eps_decay)
+        if(not train):
+            eps_threshold = self.eps_end
         self.steps_done += 1
         if sample > eps_threshold:
             with torch.no_grad():
@@ -157,8 +158,7 @@ class Agent:
 
         expected_state_action_values = (next_state_values * self.gamma) + reward_batch
 
-        # criterion = nn.SmoothL1Loss()
-        criterion = nn.MSELoss()
+        criterion = nn.SmoothL1Loss()
         loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
 
         self.optimizer.zero_grad()
@@ -195,11 +195,17 @@ class Agent:
         for i in range(num_episodes):
             state = self.env.reset()
             state = state.to(dtype=torch.float32).unsqueeze(0)
+            prev = (0, 0)
 
             while (1):
                 self.env.update()
                 action = self.select_action(state)
+
+                if(prev[0] == action and prev[1] == -15): # if the previous action is invalid, choose another action
+                    choose = random.randint(0, 3)
+                    action =  torch.tensor([[choose]], device=device, dtype=torch.long)
                 observation, reward, terminated, truncated = self.env.step(action)
+                prev = (action, reward)
                 reward = torch.tensor([reward], device=device)
                 done = terminated or truncated
                 if terminated:
@@ -289,7 +295,7 @@ class Agent:
             state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
             while (1):
                 self.env.update()
-                action = self.select_action(state)
+                action = self.select_action(state, False)
                 _, _, terminated, truncated = self.env.step(action)
                 done = terminated or truncated
 
