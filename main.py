@@ -1,5 +1,5 @@
 from agent import Agent
 
 if(__name__ == "__main__"):
-    a = Agent(dest_path='test.pth', plotting=False, logs=True)
-    a.train()
+    a = Agent(source_path='model.pth', dest_path='model.pth')
+    a.train(num_episodes=1000)

@@ -41,7 +41,7 @@ class ReplayMemory:
         return len(self.memory)
 
 class Agent:
-    def __init__(self, source_path = None, dest_path = None, batch_size = 64, gamma = 0.99, eps_start = 0.95, eps_end = 0.05, eps_decay = 500, tau = 0.005, lr = 1e-3, memory_capacity = 1000, plotting = True, logs = False):
+    def __init__(self, source_path = None, dest_path = None, batch_size = 64, gamma = 0.99, eps_start = 0.95, eps_end = 0.05, eps_decay = 500, tau = 0.005, lr = 1e-3, memory_capacity = 2000, plotting = True, logs = False):
         """
         Agent class for training the DQN model. It can be also used for testing the trained model.
         If you want to test the trained model, you can ignore all the parameters and use the default values.
@@ -125,7 +125,8 @@ class Agent:
         mypause(0.001)  # pause a bit so that plots are updated
 
 
-    def select_action(self, state, train=True):
+    def select_action(self, state, train=True, invalid=None):
+        # Returns chosen action and it's alternative
         sample = random.random()
         eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * math.exp(-1. * self.steps_done / self.eps_decay)
         if(not train):
@@ -133,7 +134,11 @@ class Agent:
         self.steps_done += 1
         if sample > eps_threshold:
             with torch.no_grad():
-                return self.policy_net(state).max(1).indices.view(1, 1)
+                fi, se = torch.topk(self.policy_net(state), 2).indices.squeeze()
+                if(fi != invalid):
+                    return fi.view(1, 1)
+                else:
+                    return se.view(1, 1)
         else:
             choose = random.randint(0, 3)
             return torch.tensor([[choose]], device=device, dtype=torch.long)
@@ -195,15 +200,17 @@ class Agent:
         for i in range(num_episodes):
             state = self.env.reset()
             state = state.to(dtype=torch.float32).unsqueeze(0)
-            prev = (0, 0)
+            prev = (None, None)
 
             while (1):
                 self.env.update()
-                action = self.select_action(state)
 
-                if(prev[0] == action and prev[1] == -15): # if the previous action is invalid, choose another action
-                    choose = random.randint(0, 3)
-                    action =  torch.tensor([[choose]], device=device, dtype=torch.long)
+                inv = None
+                if(prev[1] == -15):
+                    inv = prev[0]
+
+                action = self.select_action(state, invalid=inv)
+
                 observation, reward, terminated, truncated = self.env.step(action)
                 prev = (action, reward)
                 reward = torch.tensor([reward], device=device)
@@ -292,11 +299,19 @@ class Agent:
             self.plot_scores()
         for _ in range(num_episodes):
             state = self.env.reset()
-            state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
+            state = state.to(torch.float32).unsqueeze(0)
+            prev = (0, 0)
             while (1):
                 self.env.update()
-                action = self.select_action(state, False)
-                _, _, terminated, truncated = self.env.step(action)
+
+                inv = None
+                if(prev[1] == -15):
+                    inv = prev[0]
+
+                action = self.select_action(state, False, invalid=inv)
+                _, reward, terminated, truncated = self.env.step(action)
+                prev = (action, reward)
+
                 done = terminated or truncated
 
                 if done:
