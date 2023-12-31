@@ -56,7 +56,7 @@ class Agent:
             eps_decay (int, optional): controls the rate of exponential decay of epsilon, higher means a slower decay. Defaults to 500.
             tau (float, optional): update rate of the target network. Defaults to 0.005.
             lr (float, optional): learning rate of the ``AdamW`` optimizer. Defaults to 1e-3.
-            memory_capacity (int, optional): capacity of the replay buffer. Defaults to 1000.
+            memory_capacity (int, optional): capacity of the replay buffer. Defaults to 2000.
             plotting (bool, optional): whether to plot the training result. Defaults to True.
             logs (bool, optional): whether to save the training logs in ``training.log``. Defaults to False.
 
@@ -286,13 +286,18 @@ class Agent:
                     torch.save(self.policy_net.state_dict(), self.dest_path)
                 if(self.logs):
                     avg = sum(self.episode_scores[-50:]) / 50
-                    logging.info(f'Episode {i + 1}/{num_episodes} - Average score: {avg}')
+                    logging.info(f'Episode {i}/{num_episodes} - Average score: {avg}')
 
         print('Complete')
         if(self.plotting):
             self.plot_scores(show_result=True)
             plt.ioff()
             plt.show()
+        if(self.dest_path is not None):
+            torch.save(self.policy_net.state_dict(), self.dest_path)
+        if(self.logs):
+            avg = sum(self.episode_scores[-50:]) / 50
+            logging.info(f'FINISHED! Episode {i}/{num_episodes} - Average score: {avg}')
 
     def play(self, num_episodes=50):
         if(self.plotting):
